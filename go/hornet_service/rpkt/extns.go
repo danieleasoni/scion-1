@@ -44,11 +44,14 @@ func (rp *RtrPkt) extnParseHBH(extType common.ExtnType,
 	start, end, pos int) (rExtension, *common.Error) {
 	switch {
 	case extType == common.ExtnTracerouteType:
-		return rTracerouteFromRaw(rp, start, end)
+		//return rTracerouteFromRaw(rp, start, end)
+		return nil, common.NewError("only HORNET implemented")
 	case extType == common.ExtnOneHopPathType:
-		return rOneHopPathFromRaw(rp)
+		//return rOneHopPathFromRaw(rp)
+		return nil, common.NewError("only HORNET implemented")
 	case extType == common.ExtnSCMPType:
-		return rSCMPExtFromRaw(rp, start, end)
+		//return rSCMPExtFromRaw(rp, start, end)
+		return nil, common.NewError("only HORNET implemented")
 	case extType == common.ExtnHORNETType:
 		return rHORNETFromRaw(rp)
 	default:
@@ -96,11 +99,12 @@ func (rp *RtrPkt) extnParseE2E(extType common.ExtnType,
 	start, end, pos int) (rExtension, *common.Error) {
 	switch {
 	case extType == common.ExtnSCIONPacketSecurityType:
-		extn, err := parseSPSEfromRaw(rp, start, end, pos)
-		if err != nil {
-			return nil, err
-		}
-		return extn, nil
+		//extn, err := parseSPSEfromRaw(rp, start, end, pos)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//return extn, nil
+		return nil, common.NewError("Not implemented")
 	default:
 		// E2E not supported, so send an SCMP error in response.
 		sdata := scmp.NewErrData(scmp.C_Ext, scmp.T_E_BadEnd2End,

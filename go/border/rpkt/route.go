@@ -95,6 +95,10 @@ func (rp *RtrPkt) RouteResolveSVCAny(
 	name := names[rand.Intn(len(names))]
 	elem := elemMap[name]
 	dst := &net.UDPAddr{IP: elem.Addr.IP, Port: overlay.EndhostPort}
+	// FIXME: use endhost port instead of fixed HORNET port
+	if svc == addr.HostSVC(addr.SvcHS) {
+		dst.Port = 40000
+	}
 	rp.Egress = append(rp.Egress, EgressPair{f, dst})
 	return HookContinue, nil
 }

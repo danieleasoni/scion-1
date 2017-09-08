@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/netsec-ethz/scion/go/border/ifstate"
-	"github.com/netsec-ethz/scion/go/border/rctx"
+	"github.com/netsec-ethz/scion/go/hornet_service/ifstate"
+	"github.com/netsec-ethz/scion/go/hornet_service/rctx"
 	"github.com/netsec-ethz/scion/go/lib/addr"
 	"github.com/netsec-ethz/scion/go/lib/common"
 	"github.com/netsec-ethz/scion/go/lib/l4"
@@ -38,29 +38,29 @@ const (
 // NeedsLocalProcessing determines if the router needs to do more than just
 // forward a packet (e.g. resolve an SVC destination address).
 func (rp *RtrPkt) NeedsLocalProcessing() *common.Error {
-	if *rp.dstIA != *rp.Ctx.Conf.IA {
-		// Packet isn't to this ISD-AS, so just forward.
-		rp.hooks.Route = append(rp.hooks.Route, rp.forward)
-		return nil
-	}
-	if rp.CmnHdr.DstType == addr.HostTypeSVC {
-		// SVC address needs to be resolved for delivery.
-		rp.hooks.Route = append(rp.hooks.Route, rp.RouteResolveSVC)
-		return nil
-	}
+	//if *rp.dstIA != *rp.Ctx.Conf.IA {
+	//	// Packet isn't to this ISD-AS, so just forward.
+	//	rp.hooks.Route = append(rp.hooks.Route, rp.forward)
+	//	return nil
+	//}
+	//if rp.CmnHdr.DstType == addr.HostTypeSVC {
+	//	// SVC address needs to be resolved for delivery.
+	//	rp.hooks.Route = append(rp.hooks.Route, rp.RouteResolveSVC)
+	//	return nil
+	//}
 	// Check to see if the destination IP is the address the packet was received
 	// on.
-	dstIP := rp.dstHost.IP()
-	intf := rp.Ctx.Conf.Net.IFs[*rp.ifCurr]
-	extPub := intf.IFAddr.PublicAddr()
-	locPub := rp.Ctx.Conf.Net.IntfLocalAddr(*rp.ifCurr).PublicAddr()
-	if rp.DirFrom == DirExternal && extPub.IP.Equal(dstIP) {
-		return rp.isDestSelf(extPub)
-	} else if rp.DirFrom == DirLocal && locPub.IP.Equal(dstIP) {
-		return rp.isDestSelf(locPub)
-	}
+	//dstIP := rp.dstHost.IP()
+	//intf := rp.Ctx.Conf.Net.IFs[*rp.ifCurr]
+	//extPub := intf.IFAddr.PublicAddr()
+	//locPub := rp.Ctx.Conf.Net.IntfLocalAddr(*rp.ifCurr).PublicAddr()
+	//if rp.DirFrom == DirExternal && extPub.IP.Equal(dstIP) {
+	//	return rp.isDestSelf(extPub)
+	//} else if rp.DirFrom == DirLocal && locPub.IP.Equal(dstIP) {
+	//	return rp.isDestSelf(locPub)
+	//}
 	// Non-SVC packet to local AS, just forward.
-	rp.hooks.Route = append(rp.hooks.Route, rp.forward)
+	//rp.hooks.Route = append(rp.hooks.Route, rp.forward)
 	return nil
 }
 
@@ -125,11 +125,12 @@ func (rp *RtrPkt) processDestSelf() (HookResult, *common.Error) {
 	// Determine the type of SCION control payload.
 	switch pld.Which() {
 	case proto.SCION_Which_ifid:
-		ifid, err := pld.Ifid()
-		if err != nil {
-			return HookError, common.NewError(errPldGet, "err", err)
-		}
-		return rp.processIFID(ifid)
+		//ifid, err := pld.Ifid()
+		//if err != nil {
+		//	return HookError, common.NewError(errPldGet, "err", err)
+		//}
+		//return rp.processIFID(ifid)
+		return HookError, common.NewError("not implemented")
 	case proto.SCION_Which_pathMgmt:
 		pathMgmt, err := pld.PathMgmt()
 		if err != nil {
@@ -143,35 +144,35 @@ func (rp *RtrPkt) processDestSelf() (HookResult, *common.Error) {
 }
 
 // processIFID handles IFID (interface ID) packets from neighbouring ISD-ASes.
-func (rp *RtrPkt) processIFID(pld proto.IFID) (HookResult, *common.Error) {
-	// Set the RelayIF field in the payload to the current interface ID.
-	pld.SetRelayIF(uint16(*rp.ifCurr))
-	if err := rp.SetPld(rp.pld); err != nil {
-		return HookError, err
-	}
-	intf := rp.Ctx.Conf.Net.IFs[*rp.ifCurr]
-	srcAddr := rp.Ctx.Conf.Net.LocAddr[intf.LocAddrIdx].PublicAddr()
-	// Create base packet to local beacon service (multicast).
-	fwdrp, err := RtrPktFromScnPkt(&spkt.ScnPkt{
-		DstIA: rp.Ctx.Conf.IA, SrcIA: rp.Ctx.Conf.IA,
-		DstHost: addr.SvcBS.Multicast(), SrcHost: addr.HostFromIP(srcAddr.IP),
-		L4: &l4.UDP{SrcPort: uint16(srcAddr.Port), DstPort: 0},
-	}, DirLocal, rp.Ctx)
-	if err != nil {
-		return HookError, err
-	}
-	// Use updated payload.
-	if err := fwdrp.SetPld(rp.pld); err != nil {
-		return HookError, common.NewError("Error setting IFID forwarding payload", err.Ctx...)
-	}
-	fwdrp.ifCurr = rp.ifCurr
-	// Resolve SVC address.
-	if _, err := fwdrp.RouteResolveSVC(); err != nil {
-		return HookError, err
-	}
-	fwdrp.Route()
-	return HookFinish, nil
-}
+//func (rp *RtrPkt) processIFID(pld proto.IFID) (HookResult, *common.Error) {
+//	// Set the RelayIF field in the payload to the current interface ID.
+//	pld.SetRelayIF(uint16(*rp.ifCurr))
+//	if err := rp.SetPld(rp.pld); err != nil {
+//		return HookError, err
+//	}
+//	intf := rp.Ctx.Conf.Net.IFs[*rp.ifCurr]
+//	srcAddr := rp.Ctx.Conf.Net.LocAddr[intf.LocAddrIdx].PublicAddr()
+//	// Create base packet to local beacon service (multicast).
+//	fwdrp, err := RtrPktFromScnPkt(&spkt.ScnPkt{
+//		DstIA: rp.Ctx.Conf.IA, SrcIA: rp.Ctx.Conf.IA,
+//		DstHost: addr.SvcBS.Multicast(), SrcHost: addr.HostFromIP(srcAddr.IP),
+//		L4: &l4.UDP{SrcPort: uint16(srcAddr.Port), DstPort: 0},
+//	}, DirLocal, rp.Ctx)
+//	if err != nil {
+//		return HookError, err
+//	}
+//	// Use updated payload.
+//	if err := fwdrp.SetPld(rp.pld); err != nil {
+//		return HookError, common.NewError("Error setting IFID forwarding payload", err.Ctx...)
+//	}
+//	fwdrp.ifCurr = rp.ifCurr
+//	// Resolve SVC address.
+//	if _, err := fwdrp.RouteResolveSVC(); err != nil {
+//		return HookError, err
+//	}
+//	fwdrp.Route()
+//	return HookFinish, nil
+//}
 
 // processPathMgmtSelf handles Path Management SCION control messages.
 func (rp *RtrPkt) processPathMgmtSelf(pathMgmt proto.PathMgmt) (HookResult, *common.Error) {
@@ -195,7 +196,7 @@ func (rp *RtrPkt) processSCMP() (HookResult, *common.Error) {
 	hdr := rp.l4.(*scmp.Hdr)
 	switch {
 	case rp.DirFrom == DirExternal && hdr.Class == scmp.C_Path && hdr.Type == scmp.T_P_RevokedIF:
-		rp.processSCMPRevocation()
+		//rp.processSCMPRevocation()
 	default:
 		rp.Error("Unsupported destination SCMP payload", "class", hdr.Class,
 			"type", hdr.Type)
@@ -214,26 +215,26 @@ func (rp *RtrPkt) processSCMP() (HookResult, *common.Error) {
 //    ASes downstream of a revoked interface get informed quickly.
 // 3. The revocation's destination is the local AS. The revocation notification is forked to the
 //    local PS, to ensure that it stops providing segments with revoked interfaces to clients.
-func (rp *RtrPkt) processSCMPRevocation() {
-	var args RevTokenCallbackArgs
-	pld := rp.pld.(*scmp.Payload)
-	args.RevInfo = pld.Info.(*scmp.InfoRevocation).RevToken
-	intf := rp.Ctx.Conf.Net.IFs[*rp.ifCurr]
-	if (rp.dstIA.I == rp.Ctx.Conf.IA.I && intf.Type == topology.LinkCore) ||
-		(rp.srcIA.I == rp.Ctx.Conf.IA.I && intf.Type == topology.LinkParent) {
-		// Case 1 & 2
-		args.Addrs = append(args.Addrs, addr.SvcBS)
-		if len(rp.Ctx.Conf.TopoMeta.T.PS) > 0 {
-			args.Addrs = append(args.Addrs, addr.SvcPS)
-		}
-	} else if rp.dstIA.Eq(rp.Ctx.Conf.IA) && len(rp.Ctx.Conf.TopoMeta.T.PS) > 0 {
-		// Case 3
-		args.Addrs = append(args.Addrs, addr.SvcPS)
-	}
-	if len(args.Addrs) > 0 {
-		callbacks.revTokenF(args)
-	}
-}
+//func (rp *RtrPkt) processSCMPRevocation() {
+//	var args RevTokenCallbackArgs
+//	pld := rp.pld.(*scmp.Payload)
+//	args.RevInfo = pld.Info.(*scmp.InfoRevocation).RevToken
+//	intf := rp.Ctx.Conf.Net.IFs[*rp.ifCurr]
+//	if (rp.dstIA.I == rp.Ctx.Conf.IA.I && intf.Type == topology.LinkCore) ||
+//		(rp.srcIA.I == rp.Ctx.Conf.IA.I && intf.Type == topology.LinkParent) {
+//		// Case 1 & 2
+//		args.Addrs = append(args.Addrs, addr.SvcBS)
+//		if len(rp.Ctx.Conf.TopoMeta.T.PS) > 0 {
+//			args.Addrs = append(args.Addrs, addr.SvcPS)
+//		}
+//	} else if rp.dstIA.Eq(rp.Ctx.Conf.IA) && len(rp.Ctx.Conf.TopoMeta.T.PS) > 0 {
+//		// Case 3
+//		args.Addrs = append(args.Addrs, addr.SvcPS)
+//	}
+//	if len(args.Addrs) > 0 {
+//		callbacks.revTokenF(args)
+//	}
+//}
 
 // getSVCNamesMap returns the slice of instance names and addresses for a given
 // SVC address.
@@ -251,13 +252,6 @@ func getSVCNamesMap(svc addr.HostSVC, ctx *rctx.Ctx) (
 		names, elemMap = tm.CSNames, tm.T.CS
 	case addr.SvcSB:
 		names, elemMap = tm.SBNames, tm.T.SB
-	case addr.SvcHS:
-		//names, elemMap = tm.HSNames, tm.T.HS
-		elemMap = make(map[string]topology.BasicElem)
-		names = tm.HSNames
-		for _, name := range names {
-			elemMap[name] = tm.T.HS[name].BasicElem
-		}
 	default:
 		sdata := scmp.NewErrData(scmp.C_Routing, scmp.T_R_BadHost, nil)
 		return nil, nil, common.NewErrorData("Unsupported SVC address", sdata, "svc", svc)

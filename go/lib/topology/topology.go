@@ -33,6 +33,7 @@ type TopoMeta struct {
 	PSNames []string
 	CSNames []string
 	SBNames []string
+	HSNames []string
 	ZKIDs   []int
 	IFMap   map[int]TopoBR
 }
@@ -42,6 +43,7 @@ type Topo struct {
 	BS   map[string]BasicElem `yaml:"BeaconServers"`
 	PS   map[string]BasicElem `yaml:"PathServers"`
 	CS   map[string]BasicElem `yaml:"CertificateServers"`
+	HS   map[string]TopoHS 	  `yaml:"HornetServers"`
 	SB   map[string]BasicElem `yaml:"SibraServers"`
 	ZK   map[int]BasicElem    `yaml:"Zookeepers"`
 	Core bool                 `yaml:"Core"`
@@ -61,6 +63,10 @@ func (b BasicElem) String() string {
 type TopoBR struct {
 	BasicElem `yaml:",inline"`
 	IF        *TopoIF `yaml:"Interface"`
+}
+
+type TopoHS struct {
+	BasicElem `yaml:",inline"`
 }
 
 func (t TopoBR) String() string {
@@ -136,6 +142,9 @@ func (tm *TopoMeta) populateMeta() {
 	}
 	for k := range tm.T.SB {
 		tm.SBNames = append(tm.SBNames, k)
+	}
+	for k := range tm.T.HS {
+		tm.HSNames = append(tm.HSNames, k)
 	}
 	for k := range tm.T.ZK {
 		tm.ZKIDs = append(tm.ZKIDs, k)

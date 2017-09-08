@@ -23,9 +23,9 @@ import (
 	log "github.com/inconshreveable/log15"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/netsec-ethz/scion/go/border/metrics"
-	"github.com/netsec-ethz/scion/go/border/rctx"
-	"github.com/netsec-ethz/scion/go/border/rpkt"
+	"github.com/netsec-ethz/scion/go/hornet_service/metrics"
+	"github.com/netsec-ethz/scion/go/hornet_service/rctx"
+	"github.com/netsec-ethz/scion/go/hornet_service/rpkt"
 	"github.com/netsec-ethz/scion/go/lib/common"
 	"github.com/netsec-ethz/scion/go/lib/log"
 	"github.com/netsec-ethz/scion/go/lib/spath"
@@ -133,9 +133,7 @@ type posixOutputFunc func(common.RawBytes, *net.UDPAddr) (int, error)
 
 // writePosixOutput writes packets to a POSIX(/BSD) socket using the provided
 // function (a wrapper around net.UDPConn.WriteToUDP or net.UDPConn.Write).
-func writePosixOutput(labels prometheus.Labels,
-	oo rctx.OutputObj, dst *net.UDPAddr, f posixOutputFunc) {
-	start := monotime.Now()
+func writePosixOutput(oo rctx.OutputObj, dst *net.UDPAddr, f posixOutputFunc) {
 	raw := oo.Bytes()
 	if count, err := f(raw, dst); err != nil {
 		oo.Error("Error sending packet", "err", err, "dst", dst)
@@ -144,8 +142,4 @@ func writePosixOutput(labels prometheus.Labels,
 		oo.Error("Unable to write full packet", "len", len(raw), "written", count)
 		return
 	}
-	t := monotime.Since(start).Seconds()
-	metrics.OutputProcessTime.With(labels).Add(t)
-	metrics.BytesSent.With(labels).Add(float64(len(raw)))
-	metrics.PktsSent.With(labels).Inc()
 }

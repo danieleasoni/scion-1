@@ -185,6 +185,7 @@ const (
 	SvcCS
 	SvcBR
 	SvcSB
+	SvcHS
 )
 
 func (st ServiceType) String() string {
@@ -199,6 +200,8 @@ func (st ServiceType) String() string {
 		return "BR"
 	case SvcSB:
 		return "SB"
+	case SvcHS:
+		return "HS"
 	default:
 		return "??"
 	}

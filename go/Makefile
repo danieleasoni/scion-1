@@ -64,4 +64,6 @@ libs: deps_proto
 
 hsr: libs
 	GOBIN=${LOCAL_GOBIN} go install -v -tags "$(GOTAGS) hsr" ./border/...
+	GOBIN=${LOCAL_GOBIN} go install -v -tags "$(GOTAGS) hsr" ./hornet_service/...
 	sudo setcap cap_dac_read_search,cap_dac_override,cap_sys_admin,cap_net_raw+ep ../bin/border
+	sudo setcap cap_dac_read_search,cap_dac_override,cap_sys_admin,cap_net_raw+ep ../bin/hornet_service

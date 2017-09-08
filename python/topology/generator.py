@@ -107,6 +107,7 @@ DEFAULT_BEACON_SERVERS = 1
 DEFAULT_CERTIFICATE_SERVERS = 1
 DEFAULT_PATH_SERVERS = 1
 DEFAULT_SIBRA_SERVERS = 1
+DEFAULT_HORNET_SERVERS = 1
 INITIAL_CERT_VERSION = 0
 INITIAL_TRC_VERSION = 0
 
@@ -121,6 +122,7 @@ SCION_SERVICE_NAMES = (
     "BorderRouters",
     "PathService",
     "SibraService",
+    "HornetService",
 )
 
 DEFAULT_KEYGEN_ALG = 'Ed25519'
@@ -589,6 +591,7 @@ class TopoGenerator(object):
              "CertificateService"),
             ("path_servers", DEFAULT_PATH_SERVERS, "ps", "PathService"),
             ("sibra_servers", DEFAULT_SIBRA_SERVERS, "sb", "SibraService"),
+            ("hornet_servers", DEFAULT_HORNET_SERVERS, "hs", "HornetService"),
         ):
             self._gen_srv_entry(
                 topo_id, as_conf, conf_key, def_num, nick, topo_key)
@@ -604,6 +607,9 @@ class TopoGenerator(object):
                     'L4Port': random.randint(30050, 30100),
                 }]
             }
+            # FIXME: for testing fixed port for HORNET service
+            if nick == "hs":
+                d['Public'][0]['L4Port'] = 40000
             if self.gen_bind_addr:
                 d['Bind'] = [{
                     'Addr': self._reg_bind_addr(topo_id, elem_id),
@@ -775,6 +781,7 @@ class SupervisorGenerator(object):
             ("CertificateService", "bin/cert_server"),
             ("PathService", "bin/path_server"),
             ("SibraService", "bin/sibra_server"),
+            ("HornetService", "bin/hornet_service"),
         ):
             entries.extend(self._std_entries(topo, key, cmd, base))
         if self.router == "go":
@@ -782,6 +789,7 @@ class SupervisorGenerator(object):
         else:
             entries.extend(self._std_entries(topo, "BorderRouters",
                                              "bin/router", base))
+        entries.extend(self._hs_entries(topo, cmd, base))
         entries.extend(self._zk_entries(topo_id))
         self._write_as_conf(topo_id, entries)
 
@@ -797,6 +805,13 @@ class SupervisorGenerator(object):
         for k, v in topo.get("BorderRouters", {}).items():
             conf_dir = os.path.join(base, k)
             entries.append((k, [cmd, "-id", k, "-confd", conf_dir, "-prom", _prom_addr_br(v)]))
+        return entries
+
+    def _hs_entries(self, topo, cmd, base):
+        entries = []
+        for k, v in topo.get("HornetService", {}).items():
+            conf_dir = os.path.join(base, k)
+            entries.append((k, [cmd, "-id", k, "-confd", conf_dir]))
         return entries
 
     def _sciond_entry(self, name, conf_dir):
@@ -864,6 +879,8 @@ class SupervisorGenerator(object):
                 path = self._sciond_path("sd%s" % topo_id)
                 prog['environment'] += ',SCIOND_PATH="%s"' % path
         if elem.startswith("br") and self.router == "go":
+            prog['environment'] += ',GODEBUG="cgocheck=0"'
+        if elem.startswith("hs"):
             prog['environment'] += ',GODEBUG="cgocheck=0"'
         if elem.startswith("zk") and self.zk_config["Environment"]:
             for k, v in self.zk_config["Environment"].items():
@@ -1235,6 +1252,15 @@ def _topo_json_to_yaml(topo_dicts):
                 topo_old["SibraServers"][sb_id] = {
                     'Addr': sb_addr,
                     'Port': sb_port
+                }
+        elif service == "HornetService":
+            topo_old["HornetServers"] = {}
+            for hs_id, entity in attributes.items():
+                hs_addr = topo_dicts[service][hs_id]["Public"][0]["Addr"]
+                hs_port = topo_dicts[service][hs_id]["Public"][0]["L4Port"]
+                topo_old["HornetServers"][hs_id] = {
+                    'Addr': hs_addr,
+                    'Port': hs_port
                 }
         elif service == "ZookeeperService":
             topo_old["Zookeepers"] = {}

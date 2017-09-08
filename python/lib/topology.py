@@ -25,6 +25,7 @@ from lib.defines import (
     PATH_SERVICE,
     ROUTER_SERVICE,
     SIBRA_SERVICE,
+    HORNET_SERVICE,
 )
 from lib.errors import SCIONKeyError
 from lib.packet.host_addr import haddr_parse_interface
@@ -158,6 +159,7 @@ class Topology(object):
         self.certificate_servers = []
         self.path_servers = []
         self.sibra_servers = []
+        self.hornet_servers = []
         self.border_routers = []
         self.parent_interfaces = []
         self.child_interfaces = []
@@ -207,6 +209,7 @@ class Topology(object):
             ("CertificateService", self.certificate_servers),
             ("PathService", self.path_servers),
             ("SibraService", self.sibra_servers),
+            ("HornetService", self.hornet_servers),
         ):
             for k, v in topology[type_].items():
                 list_.append(ServerElement(v, k))
@@ -251,6 +254,7 @@ class Topology(object):
             PATH_SERVICE: self.path_servers,
             ROUTER_SERVICE: self.border_routers,
             SIBRA_SERVICE: self.sibra_servers,
+            HORNET_SERVICE: self.hornet_servers,
         }
         try:
             target = type_map[server_type]

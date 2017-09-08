@@ -52,6 +52,7 @@ class ServiceType(TypeBase):
     CS = "cs"
     BR = "br"
     SIBRA = "sb"
+    HORNET = "hs"
 
 
 class ExtensionClass(TypeBase):
