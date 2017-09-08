@@ -117,6 +117,7 @@ func readPosixInput(args *PosixInputFuncArgs) {
 			// TODO(kormat): experiment with performance by calling processPacket directly instead.
 			args.ProcessPacket(rp)
 			metrics.PktProcessTime.Add(monotime.Since(rp.TimeIn).Seconds())
+			rp.Logger.Info("Packet processed", "time", monotime.Since(rp.TimeIn).Nanoseconds())
 			// Reset rpkt buffer so it can be reused.
 			rp.Reset()
 		case <-args.StopChan:

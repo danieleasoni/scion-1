@@ -16,10 +16,25 @@
 // router's various packages.
 package conf
 
+/*
+#cgo LDFLAGS: -lhornet -lscion
+
+#include <stdlib.h>
+#include <string.h>
+#include <hornet.h>
+
+HornetNode* allocate_hornet_node() {
+	return (HornetNode *) malloc(sizeof(HornetNode));
+}
+*/
+import "C"
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"path/filepath"
+	"io/ioutil"
 	"sync"
+	"unsafe"
 
 	"golang.org/x/crypto/pbkdf2"
 
@@ -48,6 +63,8 @@ type Conf struct {
 	Net *netconf.NetConf
 	// Dir is the configuration directory.
 	Dir string
+	// HORNET configuration
+	HORNETNode *C.HornetNode
 }
 
 // Load sets up the configuration, loading it from the supplied config directory.
@@ -94,6 +111,24 @@ func Load(id, confDir string) (*Conf, *common.Error) {
 
 	// Create network configuration
 	conf.Net = netconf.FromTopo(conf.BR)
+
+	// Create HORNET configuration
+	node := C.allocate_hornet_node()
+	as_master_key := conf.ASConf.MasterASKey
+	var AS_HORNET_KEY C.Secret
+	rc := C.derive_secret((*[16]C.uint8_t)(unsafe.Pointer(&as_master_key[0])), C.MASTER_HORNET_KEY, &AS_HORNET_KEY)
+	if rc != C.HORNET_SUCCESS {
+		return nil, err
+	}
+	key_data, ioerr := ioutil.ReadFile(conf.Dir + "/keys/as-decrypt.key")
+	if ioerr != nil {
+		return nil, err
+	}
+	AS_PRIVATE_KEY, _ := base64.StdEncoding.DecodeString(string(key_data))
+	C.memcpy(unsafe.Pointer(&node.secret_value), unsafe.Pointer(&AS_HORNET_KEY), C.SECRET_LEN)
+	C.memcpy(unsafe.Pointer(&node.encryption_key), unsafe.Pointer(&AS_PRIVATE_KEY[0]), C.PRIVATE_KEY_LEN)
+	conf.HORNETNode = node
+
 	// Save config
 	return conf, nil
 }

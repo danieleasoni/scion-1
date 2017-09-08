@@ -49,6 +49,8 @@ func (rp *RtrPkt) extnParseHBH(extType common.ExtnType,
 		return rOneHopPathFromRaw(rp)
 	case extType == common.ExtnSCMPType:
 		return rSCMPExtFromRaw(rp, start, end)
+	case extType == common.ExtnHORNETType:
+		return rHORNETFromRaw(rp)
 	default:
 		// HBH not supported, so send an SCMP error in response.
 		sdata := scmp.NewErrData(scmp.C_Ext, scmp.T_E_BadHopByHop,
